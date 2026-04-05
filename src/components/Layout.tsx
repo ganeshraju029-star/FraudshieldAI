@@ -1,12 +1,23 @@
+import React, { useEffect } from 'react';
 import { Header } from './Header';
 import { Footer } from './Footer';
 import { AlertModal } from './AlertModal';
+import { initAudio } from '../utils/mockDataGenerator';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 export function Layout({ children }: LayoutProps) {
+  useEffect(() => {
+    const handleFirstClick = () => {
+       initAudio();
+       window.removeEventListener('click', handleFirstClick);
+    };
+    window.addEventListener('click', handleFirstClick);
+    return () => window.removeEventListener('click', handleFirstClick);
+  }, []);
+
   return (
     <div className="flex flex-col min-h-screen bg-[#07111A] font-sans antialiased">
       <Header />
