@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FraudShield AI - Payment Dashboard</title>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .status-online {
+            background: #27ae60;
+            color: white;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #3498db;
+        }
+
+        .metric-label {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        .payment-form {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, #2980b9, #21618c);
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .transactions-list {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .transaction-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #3498db;
+            transition: all 0.3s ease;
+        }
+
+        .transaction-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .transaction-item.fraud {
+            border-left-color: #e74c3c;
+            background: #fdf2f2;
+        }
+
+        .transaction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .transaction-amount {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .transaction-status {
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .status-completed {
+            background: #27ae60;
+            color: white;
+        }
+
+        .status-pending {
+            background: #f39c12;
+            color: white;
+        }
+
+        .status-fraud {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .risk-score {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .risk-low {
+            background: #27ae60;
+            color: white;
+        }
+
+        .risk-medium {
+            background: #f39c12;
+            color: white;
+        }
+
+        .risk-high {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header fade-in">
+            <h1>🛡️ FraudShield AI <span class="status-badge status-online">ONLINE</span></h1>
+            <p>Real-time Payment Processing with Advanced Fraud Detection</p>
+        </div>
+
+        <div id="alerts"></div>
+
+        <div class="dashboard">
+            <div class="card fade-in">
+                <h3>📊 Analytics</h3>
+                <div class="metric">
+                    <span class="metric-label">Total Transactions</span>
+                    <span class="metric-value" id="total-transactions">0</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Fraud Rate</span>
+                    <span class="metric-value" id="fraud-rate">0%</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Total Amount</span>
+                    <span class="metric-value" id="total-amount">₹0</span>
+                </div>
+            </div>
+
+            <div class="card fade-in">
+                <h3>🚨 Fraud Detection</h3>
+                <div class="metric">
+                    <span class="metric-label">Fraud Blocked</span>
+                    <span class="metric-value" id="fraud-blocked">0</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Avg Risk Score</span>
+                    <span class="metric-value" id="avg-risk">0</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">System Status</span>
+                    <span class="metric-value" id="system-status">🟢</span>
+                </div>
+            </div>
+
+            <div class="card fade-in">
+                <h3>💳 Payment Methods</h3>
+                <div id="payment-methods">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Loading payment methods...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="payment-form fade-in">
+            <h3>💳 Make a Payment</h3>
+            <form id="payment-form">
+                <div class="form-group">
+                    <label for="amount">Amount (₹)</label>
+                    <input type="number" id="amount" name="amount" min="1" step="0.01" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="user-id">User ID</label>
+                    <input type="text" id="user-id" name="user_id" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="location">Location</label>
+                    <select id="location" name="location" required>
+                        <option value="">Select Location</option>
+                        <option value="New York, USA">New York, USA</option>
+                        <option value="London, UK">London, UK</option>
+                        <option value="Tokyo, Japan">Tokyo, Japan</option>
+                        <option value="Lagos, Nigeria">Lagos, Nigeria</option>
+                        <option value="São Paulo, Brazil">São Paulo, Brazil</option>
+                        <option value="Mumbai, India">Mumbai, India</option>
+                        <option value="Singapore">Singapore</option>
+                        <option value="Dubai, UAE">Dubai, UAE</option>
+                        <option value="Sydney, Australia">Sydney, Australia</option>
+                        <option value="Toronto, Canada">Toronto, Canada</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <select id="category" name="category" required>
+                        <option value="">Select Category</option>
+                        <option value="Retail">Retail</option>
+                        <option value="Digital Goods">Digital Goods</option>
+                        <option value="Crypto">Crypto</option>
+                        <option value="Travel">Travel</option>
+                        <option value="P2P Transfer">P2P Transfer</option>
+                        <option value="Gambling">Gambling</option>
+                        <option value="Groceries">Groceries</option>
+                        <option value="Restaurant">Restaurant</option>
+                        <option value="Healthcare">Healthcare</option>
+                        <option value="Education">Education</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Utilities">Utilities</option>
+                        <option value="Insurance">Insurance</option>
+                        <option value="Investment">Investment</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="target-account">Target Account / UPI (Optional)</label>
+                    <input type="text" id="target-account" name="target_account" placeholder="e.g., 987654321098765432 or user@bank">
+                </div>
+                
+                <button type="submit" class="btn" id="pay-btn">
+                    🚀 Process Payment with Fraud Detection
+                </button>
+            </form>
+        </div>
+
+        <div class="transactions-list fade-in">
+            <h3>📋 Recent Transactions</h3>
+            <div id="transactions-list">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading transactions...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card fade-in">
+            <h3>📈 Fraud Detection Trends</h3>
+            <div class="chart-container">
+                <canvas id="fraud-chart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let authToken = null;
+        let ws = null;
+        let fraudChart = null;
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+
+        async function initializeApp() {
+            try {
+                // Authenticate first
+                await authenticate();
+                
+                // Load initial data
+                await loadAnalytics();
+                await loadPaymentMethods();
+                await loadTransactions();
+                
+                // Initialize WebSocket for real-time updates
+                initializeWebSocket();
+                
+                // Initialize chart
+                initializeChart();
+                
+                // Setup form handlers
+                setupFormHandlers();
+                
+                showAlert('success', '🚀 FraudShield AI initialized successfully!');
+                
+            } catch (error) {
+                console.error('Initialization error:', error);
+                showAlert('error', '❌ Failed to initialize application');
+            }
+        }
+
+        async function authenticate() {
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: 'admin123'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Authentication failed');
+                }
+
+                const data = await response.json();
+                authToken = data.access_token;
+                
+            } catch (error) {
+                console.error('Authentication error:', error);
+                throw error;
+            }
+        }
+
+        async function loadAnalytics() {
+            try {
+                const response = await fetch('/api/analytics', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load analytics');
+                }
+
+                const data = await response.json();
+                updateAnalyticsDisplay(data);
+                
+            } catch (error) {
+                console.error('Analytics error:', error);
+            }
+        }
+
+        function updateAnalyticsDisplay(data) {
+            document.getElementById('total-transactions').textContent = data.total_transactions || 0;
+            document.getElementById('fraud-rate').textContent = `${data.fraud_rate || 0}%`;
+            document.getElementById('total-amount').textContent = `₹${(data.total_amount || 0).toLocaleString()}`;
+            document.getElementById('fraud-blocked').textContent = data.fraud_transactions || 0;
+            document.getElementById('avg-risk').textContent = Math.round(data.avg_risk_score || 0);
+            document.getElementById('system-status').textContent = data.system_status === 'healthy' ? '🟢' : '🔴';
+        }
+
+        async function loadPaymentMethods() {
+            try {
+                const response = await fetch('/api/payment/methods');
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load payment methods');
+                }
+
+                const data = await response.json();
+                displayPaymentMethods(data.methods || []);
+                
+            } catch (error) {
+                console.error('Payment methods error:', error);
+                document.getElementById('payment-methods').innerHTML = '<p>Failed to load payment methods</p>';
+            }
+        }
+
+        function displayPaymentMethods(methods) {
+            const container = document.getElementById('payment-methods');
+            
+            if (methods.length === 0) {
+                container.innerHTML = '<p>No payment methods available</p>';
+                return;
+            }
+
+            const methodsHtml = methods.map(method => `
+                <div class="metric">
+                    <span class="metric-label">${method.display_name}</span>
+                    <span class="metric-value">✅</span>
+                </div>
+            `).join('');
+
+            container.innerHTML = methodsHtml;
+        }
+
+        async function loadTransactions() {
+            try {
+                const response = await fetch('/api/payment/transactions', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load transactions');
+                }
+
+                const data = await response.json();
+                displayTransactions(data.transactions || []);
+                
+            } catch (error) {
+                console.error('Transactions error:', error);
+                document.getElementById('transactions-list').innerHTML = '<p>Failed to load transactions</p>';
+            }
+        }
+
+        function displayTransactions(transactions) {
+            const container = document.getElementById('transactions-list');
+            
+            if (transactions.length === 0) {
+                container.innerHTML = '<p>No transactions found</p>';
+                return;
+            }
+
+            const transactionsHtml = transactions.map(tx => {
+                const isFraud = tx.isFraud || tx.riskScore > 80;
+                const riskClass = tx.riskScore > 70 ? 'risk-high' : tx.riskScore > 40 ? 'risk-medium' : 'risk-low';
+                const statusClass = tx.status === 'completed' ? 'status-completed' : 
+                                  tx.status === 'refunded' ? 'status-warning' : 'status-pending';
+
+                return `
+                    <div class="transaction-item ${isFraud ? 'fraud' : ''}">
+                        <div class="transaction-header">
+                            <span class="transaction-amount">₹${tx.amount?.toLocaleString() || 0}</span>
+                            <span class="transaction-status ${statusClass}">${tx.status || 'unknown'}</span>
+                        </div>
+                        <div>
+                            <strong>${tx.category}</strong> - ${tx.location}
+                            <span class="risk-score ${riskClass}">Risk: ${tx.riskScore || 0}</span>
+                        </div>
+                        ${tx.flagReason ? `<div style="color: #e74c3c; font-size: 0.9em; margin-top: 5px;">⚠️ ${tx.flagReason}</div>` : ''}
+                        <div style="color: #7f8c8d; font-size: 0.8em; margin-top: 5px;">
+                            ${new Date(tx.timestamp).toLocaleString()}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = transactionsHtml;
+        }
+
+        function initializeWebSocket() {
+            const wsUrl = `ws://localhost:8000/ws/stream?token=${authToken}`;
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = function() {
+                console.log('WebSocket connected');
+            };
+
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                handleWebSocketMessage(data);
+            };
+
+            ws.onclose = function() {
+                console.log('WebSocket disconnected');
+                // Try to reconnect after 5 seconds
+                setTimeout(initializeWebSocket, 5000);
+            };
+
+            ws.onerror = function(error) {
+                console.error('WebSocket error:', error);
+            };
+        }
+
+        function handleWebSocketMessage(data) {
+            switch (data.type) {
+                case 'payment_completed':
+                    showAlert('success', `✅ Payment completed: ₹${data.data.amount}`);
+                    loadTransactions();
+                    loadAnalytics();
+                    break;
+                case 'fraud_alert':
+                    showAlert('error', `🚨 Fraud detected: ₹${data.data.amount} - ${data.data.flagReason}`);
+                    loadTransactions();
+                    loadAnalytics();
+                    break;
+                case 'payment_refunded':
+                    showAlert('warning', `💸 Payment refunded: ₹${data.data.amount}`);
+                    loadTransactions();
+                    break;
+            }
+        }
+
+        function initializeChart() {
+            const ctx = document.getElementById('fraud-chart').getContext('2d');
+            fraudChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Fraud Detection Score',
+                        data: [],
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        tension: 0.4
+                    }, {
+                        label: 'Safe Transactions',
+                        data: [],
+                        borderColor: '#27ae60',
+                        backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        function setupFormHandlers() {
+            const form = document.getElementById('payment-form');
+            form.addEventListener('submit', handlePaymentSubmit);
+        }
+
+        async function handlePaymentSubmit(event) {
+            event.preventDefault();
+            
+            const btn = document.getElementById('pay-btn');
+            btn.disabled = true;
+            btn.textContent = '🔄 Processing...';
+
+            try {
+                const formData = new FormData(event.target);
+                const paymentData = {
+                    amount: parseFloat(formData.get('amount')),
+                    user_id: formData.get('user_id'),
+                    location: formData.get('location'),
+                    category: formData.get('category'),
+                    target_account: formData.get('target_account') || null,
+                    notes: {
+                        source: 'web_dashboard',
+                        timestamp: new Date().toISOString()
+                    }
+                };
+
+                // Create payment order with fraud detection
+                const orderResponse = await fetch('/api/payment/create-order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(paymentData)
+                });
+
+                if (!orderResponse.ok) {
+                    const error = await orderResponse.json();
+                    if (orderResponse.status === 403) {
+                        // Fraud detected - payment blocked
+                        showAlert('error', `🚨 Payment Blocked: ${error.detail.flag_reason}`);
+                        return;
+                    }
+                    throw new Error(error.detail || 'Payment order creation failed');
+                }
+
+                const orderData = await orderResponse.json();
+                
+                // Initialize Razorpay checkout
+                const options = {
+                    key: 'rzp_test_YourTestKeyHere', // This should come from backend
+                    amount: orderData.order.amount * 100, // Convert to paise
+                    currency: orderData.order.currency,
+                    name: 'FraudShield AI',
+                    description: `Payment for ${paymentData.category}`,
+                    order_id: orderData.order.order_id,
+                    handler: async function(response) {
+                        await verifyPayment(response);
+                    },
+                    prefill: {
+                        name: paymentData.user_id,
+                        email: 'user@example.com'
+                    },
+                    theme: {
+                        color: '#3498db'
+                    }
+                };
+
+                const rzp = new Razorpay(options);
+                rzp.open();
+
+            } catch (error) {
+                console.error('Payment error:', error);
+                showAlert('error', `❌ Payment failed: ${error.message}`);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🚀 Process Payment with Fraud Detection';
+            }
+        }
+
+        async function verifyPayment(response) {
+            try {
+                const verifyResponse = await fetch('/api/payment/verify', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        razorpay_order_id: response.razorpay_order_id,
+                        razorpay_payment_id: response.razorpay_payment_id,
+                        razorpay_signature: response.razorpay_signature
+                    })
+                });
+
+                if (!verifyResponse.ok) {
+                    throw new Error('Payment verification failed');
+                }
+
+                const verifyData = await verifyResponse.json();
+                showAlert('success', `✅ Payment successful: ₹${verifyData.transaction.amount}`);
+                
+                // Refresh data
+                await loadTransactions();
+                await loadAnalytics();
+                
+            } catch (error) {
+                console.error('Verification error:', error);
+                showAlert('error', `❌ Payment verification failed: ${error.message}`);
+            }
+        }
+
+        function showAlert(type, message) {
+            const alertsContainer = document.getElementById('alerts');
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} fade-in`;
+            alertDiv.textContent = message;
+            
+            alertsContainer.appendChild(alertDiv);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+
+        // Update chart data periodically
+        setInterval(async () => {
+            if (fraudChart && authToken) {
+                try {
+                    const response = await fetch('/api/analytics', {
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`
+                        }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        
+                        // Update chart with new data
+                        const now = new Date().toLocaleTimeString();
+                        fraudChart.data.labels.push(now);
+                        fraudChart.data.datasets[0].data.push(data.fraud_rate || 0);
+                        fraudChart.data.datasets[1].data.push(100 - (data.fraud_rate || 0));
+                        
+                        // Keep only last 10 data points
+                        if (fraudChart.data.labels.length > 10) {
+                            fraudChart.data.labels.shift();
+                            fraudChart.data.datasets[0].data.shift();
+                            fraudChart.data.datasets[1].data.shift();
+                        }
+                        
+                        fraudChart.update();
+                    }
+                } catch (error) {
+                    console.error('Chart update error:', error);
+                }
+            }
+        }, 10000); // Update every 10 seconds
+    </script>
+</body>
+</html>
