@@ -114,6 +114,25 @@ export const startSimulation = () => {
   };
 
   connect();
+
+  // --- Client-Side Simulation Fallback ---
+  // If the WebSocket is not open (common on Netlify), generate mock data locally 
+  // every 7 seconds to keep the 'Live Feed' and 'Alerts' alive.
+  setInterval(() => {
+    const state = useStore.getState();
+    if (!state.simulationActive) return;
+
+    // Only simulate locally if the socket is NOT open
+    if (!socketInst || socketInst.readyState !== WebSocket.OPEN) {
+      const mockTx = generateMockTransaction();
+      state.addTransaction(mockTx);
+
+      // Randomly trigger a fraud alert popup if it's a high risk transaction
+      if (mockTx.isFraud && mockTx.riskScore > 80 && !state.alertTransaction) {
+         state.setAlertTransaction(mockTx);
+      }
+    }
+  }, 7000);
 };
 
 let audioCtx: AudioContext | null = null;
