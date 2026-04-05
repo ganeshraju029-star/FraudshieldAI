@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+backend/venv/
+backend/__pycache__/
+frontend/node_modules/
+
+# Models
+backend/*.pkl
+
+# Environment
+.env
+*.env
+backend/firebase_credentials.json
+
+# Build and IDE
+dist/
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# Temporary files
+tmp_git/
+node_modules
