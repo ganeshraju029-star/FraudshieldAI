@@ -73,17 +73,17 @@ export function AdminPanel() {
              return;
            }
            
-           const tx = generateMockTransaction(true); // Force high risk
-           tx.riskScore = Math.floor(Math.random() * 10) + 90; // Overly risky for chaos!
+           const tx = generateMockTransaction(true);
+           tx.riskScore = Math.floor(Math.random() * 10) + 90;
            addTransaction(tx);
            
-           // Trigger alert for the first and third injection for max visibility
-           if (count === 0 || count === 2) {
+           // Space out alerts: Trigger at first and fourth transaction for clarity
+           if (count === 0 || count === 3) {
              setAlertTransaction(tx);
            }
            
            count++;
-        }, 300);
+        }, 1000); // 1-second interval for better visual tracking
       }
     }
   };
