@@ -124,19 +124,15 @@ export const startSimulation = () => {
 
     // Only simulate locally if the socket is NOT open
     if (!socketInst || socketInst.readyState !== WebSocket.OPEN) {
-      // For the demo, increase the chance of fraud specifically for simulation ticks
-      const isDemoFraud = Math.random() < 0.4; 
+      // For the demo, provide a steady stream of background transactions
+      const isDemoFraud = Math.random() < 0.15; // Reduced fraud probability for background noise
       const mockTx = generateMockTransaction(isDemoFraud);
       state.addTransaction(mockTx);
 
-      // Trigger a fraud alert popup if it's a high risk transaction and no alert is already showing
-      // Risk scores for fraud are 80-100, so >= 80 ensures we capture it.
-      if (mockTx.isFraud && mockTx.riskScore >= 80 && !state.alertTransaction) {
-         console.debug("[Demo] Triggering Simulation Fraud Alert", mockTx.id);
-         state.setAlertTransaction(mockTx);
-      }
+      // Automated alerts are disabled per user request to only show on manual transactions.
+      // Logic for manual transaction alerts remains in UserDashboard.tsx
     }
-  }, 5000); // 5-second interval for highly dynamic demo
+  }, 10000); // Slower 10-second interval for background feed
 };
 
 let audioCtx: AudioContext | null = null;
