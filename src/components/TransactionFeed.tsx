@@ -32,6 +32,7 @@ export function TransactionFeed() {
               <th className="px-6 py-4 font-medium">Amount</th>
               <th className="px-6 py-4 font-medium">Merchant Cat.</th>
               <th className="px-6 py-4 font-medium">Location</th>
+              <th className="px-6 py-4 font-medium text-alert-red italic uppercase tracking-tighter">Reason</th>
               <th className="px-6 py-4 font-medium">Risk Score</th>
             </tr>
           </thead>
@@ -64,6 +65,7 @@ export function TransactionFeed() {
                   </td>
                   <td className="px-6 py-4 text-slate-400">{tx.category}</td>
                   <td className="px-6 py-4 text-slate-400 truncate max-w-[150px]">{tx.location}</td>
+                  <td className="px-6 py-4 text-alert-red font-mono text-[10px] uppercase tracking-tighter">{tx.flagReason || '-'}</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center">
                       <div className="w-16 h-2 bg-navy-900 rounded-full overflow-hidden mr-3 border border-white/5">

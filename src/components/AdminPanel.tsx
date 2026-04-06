@@ -55,11 +55,35 @@ export function AdminPanel() {
       } catch(e) {}
     } else {
       setIsChaosActive(true);
+      
+      // Attempt backend call
       try {
         await fetch('/api/admin/chaos-mode', { method: 'POST' });
-        setTimeout(() => setIsChaosActive(false), 4000); // Reset UI after max duration
+        // Even if successful, we set the active state
+        setTimeout(() => setIsChaosActive(false), 3000);
       } catch(e) {
-        setIsChaosActive(false);
+        // Fallback: Client-side burst injection
+        console.debug("[Demo] Chaos Mode: Running client-side burst injection");
+        
+        let count = 0;
+        const burstInterval = setInterval(() => {
+           if (count >= 5) {
+             clearInterval(burstInterval);
+             setIsChaosActive(false);
+             return;
+           }
+           
+           const tx = generateMockTransaction(true); // Force high risk
+           tx.riskScore = Math.floor(Math.random() * 10) + 90; // Overly risky for chaos!
+           addTransaction(tx);
+           
+           // Trigger alert for the first and third injection for max visibility
+           if (count === 0 || count === 2) {
+             setAlertTransaction(tx);
+           }
+           
+           count++;
+        }, 300);
       }
     }
   };

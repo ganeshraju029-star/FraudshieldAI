@@ -38,6 +38,7 @@ interface AppState {
   soundEnabled: boolean;
   simulationActive: boolean;
   fraudSensitivity: number;
+  transactionLimit: number;
   
   // Geolocation & Localization
   userLocation: { city: string; country: string } | null;
@@ -54,6 +55,7 @@ interface AppState {
   connectBank: (balance: number) => void;
   addTransaction: (tx: Transaction) => void;
   setAlertTransaction: (tx: Transaction | null) => void;
+  setTransactionLimit: (limit: number) => void;
   toggleSound: () => void;
   toggleSimulation: () => void;
   setFraudSensitivity: (level: number) => void;
@@ -75,6 +77,7 @@ export const useStore = create<AppState>()(
   soundEnabled: true,
   simulationActive: true,
   fraudSensitivity: 5,
+  transactionLimit: 5000,
   userLocation: null,
   userCurrency: 'USD',
   userBalance: 0, // Starts at 0 until bank connects
@@ -136,6 +139,8 @@ export const useStore = create<AppState>()(
       playAlertSound();
     }
   },
+
+  setTransactionLimit: (limit) => set({ transactionLimit: limit }),
   
   toggleSound: () => set((state) => ({ soundEnabled: !state.soundEnabled })),
   toggleSimulation: () => set((state) => ({ simulationActive: !state.simulationActive })),
@@ -174,6 +179,7 @@ export const useStore = create<AppState>()(
         userBalance: state.userBalance,
         soundEnabled: state.soundEnabled,
         fraudSensitivity: state.fraudSensitivity,
+        transactionLimit: state.transactionLimit,
         simulationActive: state.simulationActive
       })
     }

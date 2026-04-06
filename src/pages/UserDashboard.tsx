@@ -7,7 +7,7 @@ import { generateMockTransaction, evaluateFraudRisk, LOCATIONS, CATEGORIES, init
 import { formatCurrency } from '../utils/formatCurrency';
 
 export function UserDashboard() {
-  const { currentUser, users, setPin, transactions, addTransaction, setAlertTransaction, soundEnabled, userLocation, userCurrency, userBalance, adjustBalance, connectBank } = useStore();
+  const { currentUser, users, setPin, transactions, addTransaction, setAlertTransaction, soundEnabled, userLocation, userCurrency, userBalance, adjustBalance, connectBank, transactionLimit } = useStore();
   
   const [payAmount, setPayAmount] = useState('');
   const [payCategory, setPayCategory] = useState(CATEGORIES[0]);
@@ -123,6 +123,26 @@ export function UserDashboard() {
     
     const amountNum = parseFloat(payAmount);
     if (!amountNum || amountNum <= 0) return;
+
+    if (amountNum > transactionLimit) {
+      const limitTx = {
+        id: `tx_limit_${Math.random().toString(36).substring(2,8)}`,
+        userId: currentUser?.id || 'usr_demo',
+        amount: amountNum,
+        location: payLocation,
+        category: payCategory,
+        riskScore: 95,
+        isFraud: true,
+        status: 'fraud' as const,
+        flagReason: 'Transaction Limit Exceeded',
+        lat: 0, lng: 0,
+        timestamp: Date.now()
+      };
+      setAlertTransaction(limitTx);
+      addTransaction(limitTx);
+      setPaymentStatus({ show: true, type: 'error', msg: `Transaction exceeds your limit of ${formatCurrency(transactionLimit, userCurrency)}.` });
+      return;
+    }
 
     const bio = getBiometrics();
     let payload;
